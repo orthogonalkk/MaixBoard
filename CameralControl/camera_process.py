@@ -26,7 +26,7 @@ class OpenCVCamera():
     def img2bytes(self, img = None, packet_size = 5000):
         if img is None:
             return
-        params = [cv2.IMWRITE_JPEG_QUALITY, 100] 
+        params = [cv2.IMWRITE_JPEG_QUALITY, 80] 
         # img = cv2.resize(img, (320, 240))
         jpg_img = cv2.imencode(".jpg", img, params)[1]
         shape = jpg_img.shape  
@@ -46,7 +46,7 @@ def set_udp_socket():
     return client_socket, addr
 
 def send_jpeg_img(client_socket, address: tuple, camera : OpenCVCamera):
-    _, byteList = camera.img2bytes(camera.capture())
+    _, byteList = camera.img2bytes(camera.capture(), packet_size= 65507)
     if byteList is None:
         return 
     for by in byteList:
@@ -63,7 +63,7 @@ def camera_thread_routine():
             try:
                 camera = OpenCVCamera(device= 2)
                 logging.info('[**] start camera thread')
-                while camera.cap.isOpened():
+                while camera.cap.isOpened() and globalVar.get_value():
                     send_jpeg_img(client_socket= client_socket, address= address, camera= camera)
             except Exception as e:
                 logging.info('open camera error!')

@@ -1,6 +1,9 @@
 import socket
 import time
 from GlobalVar import globalVar
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 UDP_PORT = 11451
 globalVar.init()
@@ -31,7 +34,12 @@ def broadcast_identity():
 
 def broadcast_thread_routine():
     while True:
+        # while  network disconnected (globalVar.is_connected = False), try broadcast
         while not globalVar.is_connected:
-            broadcast_identity()
+            try:
+                broadcast_identity()
+            except  Exception as e:
+                logging.info('broadcast error--->' + str(e))
             time.sleep(1)
+        # while network connected (globalVar.is_connected = True), wait unitl it disconnects and try to rebroadcast
         globalVar.wait_for_disconnected()

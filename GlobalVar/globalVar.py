@@ -1,6 +1,6 @@
 import time
 
-WIFI_NAME = 'Navigation'
+WIFI_NAME = 'Navigation-0001'
 WIFI_PASSWORD = '00000000'
 
 global is_connected

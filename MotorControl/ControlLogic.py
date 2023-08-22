@@ -2,7 +2,6 @@ from . import GPIOset
 from . import V831Message_pb2 as pb
 import time
 import queue
-
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
@@ -22,7 +21,9 @@ class Event:
 
 class MotorControl:
     def __init__(self) -> None:
-        self.GPIOdict = dict(zip('0123', [GPIOset.Motor0, GPIOset.Motor1, GPIOset.Motor2, GPIOset.Motor3]))
+        self.GPIOdict = dict(zip('0123', [GPIOset.Motor0, GPIOset.Motor1,
+                                         GPIOset.Motor2, GPIOset.Motor3]))
+        self.count = 0
         GPIOset.Motor0.set_value(0)
         GPIOset.Motor1.set_value(0)
         GPIOset.Motor2.set_value(0)
@@ -54,21 +55,25 @@ class MotorControl:
         else:
             logging.info('unknow instruction: {}, type: {}'.format(instruction, type(instruction)))
     
-    def begin_event_control(self, raw_data = None, count = 0):
+    def begin_event_control(self, raw_data = None):
         try:
             if self.extract_message(raw_data) is None:
                 return
             eventQueue, periodic, repeat_times = self.extract_message(raw_data)
             if not periodic:
                 while not eventQueue.empty():
-                    self.vibrate_motor(eventQueue.get())
+                    peek = eventQueue.get()
+                    logging.info('get command: {}'.format(peek))
+                    self.vibrate_motor(peek)
             else:
                 while repeat_times > 0:
                     peek = eventQueue.get()
+                    logging.info('get command: {}'.format(peek))
                     eventQueue.put(peek)
                     self.vibrate_motor(peek) 
                     repeat_times -= 1
-            logging.info(f'Your {count}th command has been processed')
+            self.count +=1
+            logging.info(f'Your {self.count}th command has been processed')
         except Exception as e:
             logging.info('illigal event----',e)
             return
