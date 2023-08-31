@@ -10,13 +10,14 @@ RIGHT = 2
 DOWN =3
 threshold = 1.5
 countinuous_num = 2
+Devices = ['/dev/ttyS1']
+baudrate = 9600
 
-
-def send_command(direction = DOWN, period =0.5, interval = 0):
-    eventQueue[0].put(Event(id = direction, period= period, interval= interval))
+def send_command(direction = DOWN, period =0.3, interval = 0):
+    eventQueue[0].put_nowait(Event(id = direction, period= period, interval= interval))
 
 def init_serial():
-    ser = serial.Serial('/dev/ttyS1', 9600, timeout= 0.5)
+    ser = serial.Serial(Devices[0], baudrate= baudrate, timeout= 0.5)
     return [ser]
 
 def get_distance(ultrasonic : serial) -> float: 
@@ -30,12 +31,13 @@ def ultrasonic_routine():
             ultrasonics = init_serial()
             while True:
                 try:
-                    distance1.append(get_distance(ultrasonics[0]))
                     if len(distance1) > countinuous_num:
                         distance1 = distance1[-countinuous_num :]
-                        logging.info('distance: '+str(distance1))
-                    if all(i < threshold for i in distance1):
+                        logging.info('distance: ' + str(distance1))
+                    if len(distance1) == countinuous_num and all(i < threshold for i in distance1):
                         send_command()
+                    d = get_distance(ultrasonics[0])
+                    distance1.append(d) if (d > 0.27 and d < 4.6) else None
                 except Exception as e:
                     logging.info('serial read error -> ' + str(e))
                     ultrasonics = init_serial()

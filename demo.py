@@ -15,7 +15,7 @@ if __name__ == '__main__':
     os.system('wifi_connect_ap_test' + ' ' + globalVar.WIFI_NAME + ' ' + globalVar.WIFI_PASSWORD)
     time.sleep(2)
     Thread(target= ultrasonic_routine).start()
-    Thread(target= consume_command_routine).start
+    Thread(target= consume_command_routine).start()
     Thread(target= broadcast_thread_routine).start()
     Thread(target= camera_thread_routine).start()
     while True:

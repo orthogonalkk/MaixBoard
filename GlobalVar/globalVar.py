@@ -14,7 +14,7 @@ class Event:
         return '(id: {}, period: {}, interval: {})'.format(self.id, self.period, self.interval)
 
 
-eventQueue = [queue.Queue(maxsize= 8), queue.Queue(maxsize= 8)]
+eventQueue = [queue.Queue(maxsize= 4), queue.Queue(maxsize= 8)]
 
 WIFI_NAME = 'Navigation-0001'
 WIFI_PASSWORD = '00000000'

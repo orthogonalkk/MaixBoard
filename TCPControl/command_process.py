@@ -22,20 +22,7 @@ def set_network_status(host_ip, status):
     globalVar.set_ip(host_ip[0])
     globalVar.set_value(status)
 
-class Event:
-    def __init__(self, id = 0, period = 1, interval = 0) -> None:
-        self.id = id
-        self.period = period # seconds
-        self.interval = interval # seconds
-
-    def __str__(self) -> str:
-        return '(id: {}, period: {}, interval: {})'.format(self.id, self.period, self.interval)
-    
-    def __repr__(self) -> str:
-        return '(id: {}, period: {}, interval: {})'.format(self.id, self.period, self.interval)
-
-
-def extract_message(self, raw_data = None):
+def extract_message(raw_data = None):
         if raw_data is None:
             logging.info('got illegal message!')
             return
@@ -49,7 +36,7 @@ def extract_message(self, raw_data = None):
             return
         data = msg.__getattribute__(msg_name)
         for event in data.events: # the second priority
-            globalVar.eventQueue[1].put( Event(event.motor_id, event.period, event.interval))
+            globalVar.eventQueue[1].put_nowait(globalVar.Event(event.motor_id, event.period, event.interval))
 
 def TCP_communication():
     try:

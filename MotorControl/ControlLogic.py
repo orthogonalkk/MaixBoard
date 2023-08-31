@@ -2,6 +2,7 @@ from . import GPIOset
 from GlobalVar.globalVar import eventQueue, Event
 import time
 import logging
+from queue import Empty
 
 logging.basicConfig(level=logging.DEBUG)
     
@@ -27,19 +28,21 @@ class MotorControl:
 def consume_command_routine():
     motor = MotorControl()
     while True:
-        while not eventQueue[1].empty(): # deal with the sencond highest priority queue
+        while not eventQueue[1].empty() or not eventQueue[0].empty() : # deal with the sencond highest priority queue
             while not eventQueue[0].empty(): # deal with the highest priority queue
+                logging.info('consume queue 0')
                 try:
-                    peek = eventQueue[0].get(timeout= 0.5)
-                except Exception as e:
+                    peek = eventQueue[0].get_nowait()
+                except Empty as e:
                     logging.info('queue 0 empty!' + str(e))
                 logging.info('ultrasonic command: {}'.format(peek))
                 motor.vibrate_motor(peek)
             try:
-                peek = eventQueue[1].get(timeout= 0.5)
-            except Exception as e:
+                logging.info('consume queue 1')
+                peek = eventQueue[1].get_nowait()
+            except Empty as e:
                 logging.info('queue 1 empty!' + str(e))
             logging.info('TCP command: {}'.format(peek))
             motor.vibrate_motor(peek)
-        time.sleep(1)
+        time.sleep(0.1)
 
