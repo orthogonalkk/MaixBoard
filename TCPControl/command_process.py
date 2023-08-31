@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 from GlobalVar import globalVar
-from .ControlLogic import MotorControl
+from . import V831Message_pb2 as pb
 import socket
 import os
 import logging
 import select
 
 logging.basicConfig(level=logging.DEBUG)
-
-motor = MotorControl()
 
 serverPort = 6666
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -19,10 +17,39 @@ server_socket.bind(('', serverPort))
 server_socket.listen(1)
 logging.info('[**] server is ready!')
 
+
 def set_network_status(host_ip, status):
     globalVar.set_ip(host_ip[0])
     globalVar.set_value(status)
 
+class Event:
+    def __init__(self, id = 0, period = 1, interval = 0) -> None:
+        self.id = id
+        self.period = period # seconds
+        self.interval = interval # seconds
+
+    def __str__(self) -> str:
+        return '(id: {}, period: {}, interval: {})'.format(self.id, self.period, self.interval)
+    
+    def __repr__(self) -> str:
+        return '(id: {}, period: {}, interval: {})'.format(self.id, self.period, self.interval)
+
+
+def extract_message(self, raw_data = None):
+        if raw_data is None:
+            logging.info('got illegal message!')
+            return
+        msg = pb.V831Message()
+        msg.ParseFromString(raw_data)
+        if not msg.HasField('content'):
+            logging.info("Unexpected missing field (content), skip.")
+        msg_name = msg.WhichOneof("content")
+        if msg_name == 'heart_beat':
+            globalVar.set_value(True)
+            return
+        data = msg.__getattribute__(msg_name)
+        for event in data.events: # the second priority
+            globalVar.eventQueue[1].put( Event(event.motor_id, event.period, event.interval))
 
 def TCP_communication():
     try:
@@ -40,7 +67,7 @@ def TCP_communication():
             raw_data = conn.recv(2048) if ready[0] else None
             if not raw_data:
                 break
-            motor.begin_event_control(raw_data= raw_data)
+            extract_message(raw_data= raw_data)
         conn.close()
     except Exception as e:
         logging.info('command_process thread---> connnection error: ' + str(e))

@@ -25,6 +25,7 @@ g_resource_rc = 0
 # def print(*args, **kwargs):
 #     pass
 
+
 def run_connect_wifi_command():
     os.system(f"wifi_connect_ap_test {g_wifi_name} {g_wifi_password}")
 
@@ -110,7 +111,7 @@ def broadcast_thread_routine():
 # camera_thread_routine
 
 JPEG_PORT = 38892
-CAMERA_ID = 2
+CAMERA_ID = 0
 
 
 class OpenCVCamera:

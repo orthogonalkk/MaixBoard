@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package com.orange.navigation.proto;
+
+message V831Message {
+  message HeartBeat {}
+
+  message DataSet {
+    message Event {
+      int32 motor_id = 1; // motor id
+      float period = 2; // vibration period, second
+      float interval = 3; // interval, second
+    }
+
+    repeated Event events = 1; // event array
+    bool periodic = 2; // periodical or not
+    int32 repeated_times = 3;
+  }
+
+  oneof content {
+    HeartBeat heart_beat = 1;
+    DataSet data_set = 2;
+  }
+}

@@ -1,50 +1,19 @@
 from . import GPIOset
-from . import V831Message_pb2 as pb
+from GlobalVar.globalVar import eventQueue, Event
 import time
-import queue
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
-
-class Event:
-    def __init__(self, id = 0, period = 1, interval = 0) -> None:
-        self.id = id
-        self.period = period # seconds
-        self.interval = interval # seconds
-
-    def __str__(self) -> str:
-        return '(id: {}, period: {}, interval: {})'.format(self.id, self.period, self.interval)
     
-    def __repr__(self) -> str:
-        return '(id: {}, period: {}, interval: {})'.format(self.id, self.period, self.interval)
-
 
 class MotorControl:
     def __init__(self) -> None:
         self.GPIOdict = dict(zip('0123', [GPIOset.Motor0, GPIOset.Motor1,
                                          GPIOset.Motor2, GPIOset.Motor3]))
-        self.count = 0
         GPIOset.Motor0.set_value(0)
         GPIOset.Motor1.set_value(0)
         GPIOset.Motor2.set_value(0)
         GPIOset.Motor3.set_value(0)
-    
-    def extract_message(self, raw_data = None):
-        if raw_data is None:
-            logging.info('got illegal message!')
-            return
-        msg = pb.V831Message()
-        msg.ParseFromString(raw_data)
-        if not msg.HasField('content'):
-            logging.info("Unexpected missing field (content), skip.")
-        msg_name = msg.WhichOneof("content")
-        if msg_name == 'heart_beat':
-            return
-        data = msg.__getattribute__(msg_name)
-        eventQueue = queue.Queue(maxsize= 8)
-        for event in data.events:
-            eventQueue.put( Event(event.motor_id, event.period, event.interval))
-        return eventQueue, data.periodic, data.repeated_times
 
     def vibrate_motor(self, instruction):
         if isinstance(instruction, Event):
@@ -54,26 +23,23 @@ class MotorControl:
             time.sleep(instruction.interval)
         else:
             logging.info('unknow instruction: {}, type: {}'.format(instruction, type(instruction)))
-    
-    def begin_event_control(self, raw_data = None):
-        try:
-            if self.extract_message(raw_data) is None:
-                return
-            eventQueue, periodic, repeat_times = self.extract_message(raw_data)
-            if not periodic:
-                while not eventQueue.empty():
-                    peek = eventQueue.get()
-                    logging.info('get command: {}'.format(peek))
-                    self.vibrate_motor(peek)
-            else:
-                while repeat_times > 0:
-                    peek = eventQueue.get()
-                    logging.info('get command: {}'.format(peek))
-                    eventQueue.put(peek)
-                    self.vibrate_motor(peek) 
-                    repeat_times -= 1
-            self.count +=1
-            logging.info(f'Your {self.count}th command has been processed')
-        except Exception as e:
-            logging.info('illigal event----',e)
-            return
+
+def consume_command_routine():
+    motor = MotorControl()
+    while True:
+        while not eventQueue[1].empty(): # deal with the sencond highest priority queue
+            while not eventQueue[0].empty(): # deal with the highest priority queue
+                try:
+                    peek = eventQueue[0].get(timeout= 0.5)
+                except Exception as e:
+                    logging.info('queue 0 empty!' + str(e))
+                logging.info('ultrasonic command: {}'.format(peek))
+                motor.vibrate_motor(peek)
+            try:
+                peek = eventQueue[1].get(timeout= 0.5)
+            except Exception as e:
+                logging.info('queue 1 empty!' + str(e))
+            logging.info('TCP command: {}'.format(peek))
+            motor.vibrate_motor(peek)
+        time.sleep(1)
+
